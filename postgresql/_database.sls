@@ -39,6 +39,18 @@ postgresql_database_{{ svr_name|default('localhost') }}_{{ database_name }}:
     - user: root
     {%- endif %}
 
+{%- if database.init is defined and database.init.queries is defined %}
+{%- for query in database.init.get('queries', []) %}
+postgresql_database_{{ svr_name|default('localhost') }}_{{ database.init.get('maintenance_db', database_name) }}_{{ loop.index }}:
+  cmd.run:
+    - name: "PGPASSWORD={{ admin.get('password') }} \
+           psql -h {{ admin.get('host', 'localhost') }} \
+           -U {{ admin.get('user', 'root') }} \
+           -d {{ database.init.get('maintenance_db', database_name) }} \
+           -c \"{{ query }} \" "
+{%- endfor %}
+{%- endif %}
+
 {%- if database.initial_data is defined %}
 
 {%- set engine = database.initial_data.get("engine", "backupninja") %}
